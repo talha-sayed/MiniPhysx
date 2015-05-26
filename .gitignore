@@ -28,3 +28,5 @@
 *.app
 
 /Debug
+
+!/lib
