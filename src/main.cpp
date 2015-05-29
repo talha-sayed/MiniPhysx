@@ -67,35 +67,35 @@ bool loadMedia()
 {
 	bool success = true;
 
-	arrowSurfaces[SURFACE_DEFAULT] = SDL_LoadBMP("a.bmp");
+	arrowSurfaces[SURFACE_DEFAULT] = loadImage("a.bmp");
 	if(arrowSurfaces[SURFACE_DEFAULT] == NULL)
 	{
 		printf("Failed to load default image.\nSDL Error: %s", SDL_GetError());
 		success = false;
 	}
 
-	arrowSurfaces[SURFACE_UP] = SDL_LoadBMP("images\\up.bmp");
+	arrowSurfaces[SURFACE_UP] = loadImage("images\\up.bmp");
 	if(arrowSurfaces[SURFACE_UP] == NULL)
 	{
 		printf("Failed to load up image.\nSDL Error: %s", SDL_GetError());
 		success = false;
 	}
 
-	arrowSurfaces[SURFACE_DOWN] = SDL_LoadBMP("images\\down.bmp");
+	arrowSurfaces[SURFACE_DOWN] = loadImage("images\\down.bmp");
 	if(arrowSurfaces[SURFACE_DOWN] == NULL)
 	{
 		printf("Failed to load default image.\nSDL Error: %s", SDL_GetError());
 		success = false;
 	}
 
-	arrowSurfaces[SURFACE_LEFT] = SDL_LoadBMP("images\\left.bmp");
+	arrowSurfaces[SURFACE_LEFT] = loadImage("images\\left.bmp");
 	if(arrowSurfaces[SURFACE_LEFT] == NULL)
 	{
 		printf("Failed to load left image.\nSDL Error: %s", SDL_GetError());
 		success = false;
 	}
 
-	arrowSurfaces[SURFACE_RIGHT] = SDL_LoadBMP("images\\right.bmp");
+	arrowSurfaces[SURFACE_RIGHT] = loadImage("images\\right.bmp");
 	if(arrowSurfaces[SURFACE_RIGHT] == NULL)
 	{
 		printf("Failed to load default image.\nSDL Error: %s", SDL_GetError());
@@ -108,14 +108,27 @@ bool loadMedia()
 
 SDL_Surface* loadImage(std::string filepath)
 {
+	SDL_Surface* optimizedImage = NULL;
 
 	SDL_Surface* image = SDL_LoadBMP(filepath.c_str());
 	if(image == NULL)
 	{
 		printf("Error in loading the image file.\nSDL Error: %s", SDL_GetError());
 	}
+	else
+	{
+		optimizedImage = SDL_ConvertSurface(image, windowSurface->format, NULL);
 
-	return image;
+		if(optimizedImage == NULL)
+		{
+			printf("Error in creating the optimized image.\nSDL Error: %s", SDL_GetError());
+		}
+
+		SDL_FreeSurface(image);
+
+	}
+
+	return optimizedImage;
 }
 
 
