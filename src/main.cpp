@@ -1,8 +1,10 @@
 
 
 #include <SDL.h>
+#include <SDL_image.h>
 #include <iostream>
-
+#include <stdio.h>
+#include <string>
 
 const int SCREEN_WIDTH = 800;
 const int SCREEN_HEIGHT = 600;
@@ -55,7 +57,17 @@ bool init()
 		}
 		else
 		{
-			windowSurface = SDL_GetWindowSurface(window);
+
+			int imgFlags = IMG_INIT_PNG;
+			if(!(IMG_Init(imgFlags) & imgFlags))
+			{
+				printf("Error in initializing SDL_Image library. \nSDL Error: %s\n", SDL_GetError());
+				success = false;
+			}
+			else
+			{
+				windowSurface = SDL_GetWindowSurface(window);
+			}
 		}
 	}
 
@@ -67,7 +79,7 @@ bool loadMedia()
 {
 	bool success = true;
 
-	arrowSurfaces[SURFACE_DEFAULT] = loadImage("a.bmp");
+	arrowSurfaces[SURFACE_DEFAULT] = IMG_Load("images\\loaded.png");
 	if(arrowSurfaces[SURFACE_DEFAULT] == NULL)
 	{
 		printf("Failed to load default image.\nSDL Error: %s", SDL_GetError());
