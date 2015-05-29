@@ -4,8 +4,8 @@
 #include <iostream>
 
 
-const int SCREEN_WIDTH = 640;
-const int SCREEN_HEIGHT = 480;
+const int SCREEN_WIDTH = 800;
+const int SCREEN_HEIGHT = 600;
 
 
 bool init();
@@ -210,10 +210,16 @@ int main(int argc, char* argv[])
 
 				}
 
-				SDL_BlitSurface(currentSurface, NULL, windowSurface, NULL);
+				SDL_Rect stretchRect;
+
+				stretchRect.x = 0;
+				stretchRect.y = 0;
+				stretchRect.h = SCREEN_HEIGHT;
+				stretchRect.w = SCREEN_WIDTH;
+
+				SDL_BlitScaled(currentSurface, NULL, windowSurface, &stretchRect);
 
 				SDL_UpdateWindowSurface(window);
-
 
 				SDL_Delay(15);
 
