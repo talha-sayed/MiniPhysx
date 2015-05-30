@@ -18,6 +18,7 @@ SDL_Texture* loadTexture(std::string);
 
 SDL_Window* window = NULL;
 SDL_Texture* gTexture = NULL;
+SDL_Texture* viewportTexture = NULL;
 SDL_Renderer* gRenderer = NULL;
 
 bool init()
@@ -76,6 +77,13 @@ bool loadMedia()
 		success = false;
 	}
 
+	viewportTexture = loadTexture("images\\map.jpg");
+	if(viewportTexture == NULL)
+	{
+		printf("Failed to load map image.\nSDL Error: %s", SDL_GetError());
+		success = false;
+	}
+
 	return success;
 }
 
@@ -116,6 +124,9 @@ void close()
 	SDL_DestroyTexture(gTexture);
 	gTexture = NULL;
 
+	SDL_DestroyTexture(viewportTexture);
+	viewportTexture = NULL;
+
 	SDL_DestroyWindow(window);
 	SDL_DestroyRenderer(gRenderer);
 	window = NULL;
@@ -140,10 +151,30 @@ void drawShapes()
 	SDL_RenderDrawLine(gRenderer, 0, SCREEN_HEIGHT/2, SCREEN_WIDTH, SCREEN_HEIGHT/2);
 }
 
+int index = 1;
+
+
+void displayInViewPort()
+{
+	SDL_Rect viewPort;
+
+	viewPort.x = 0;
+	viewPort.y = 0;
+	viewPort.h = SCREEN_HEIGHT/2;
+	viewPort.w = SCREEN_WIDTH/2;
+	SDL_RenderSetViewport(gRenderer, &viewPort);
+
+	viewPort.x = 100;
+	viewPort.y = 100;
+	viewPort.h = SCREEN_HEIGHT/6;
+	viewPort.w = SCREEN_WIDTH/6;
+	SDL_RenderCopy(gRenderer, viewportTexture, NULL, &viewPort);
+
+	SDL_RenderSetViewport(gRenderer, NULL);
+}
 
 int main(int argc, char* argv[])
 {
-
 	if(!init())
 	{
 		printf("Failed to initialize.\n");
@@ -173,7 +204,8 @@ int main(int argc, char* argv[])
 
 				SDL_RenderCopy(gRenderer, gTexture, NULL, NULL);
 
-				drawShapes();
+				//drawShapes();
+				displayInViewPort();
 
 				SDL_RenderPresent(gRenderer);
 
