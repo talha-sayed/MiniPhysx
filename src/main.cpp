@@ -13,29 +13,12 @@ const int SCREEN_HEIGHT = 600;
 bool init();
 bool loadMedia();
 void close();
-SDL_Surface* loadImage(std::string);
+SDL_Texture* loadTexture(std::string);
 
 
 SDL_Window* window = NULL;
-SDL_Surface* windowSurface = NULL;
-SDL_Surface* imageSurface = NULL;
-
-
-
-enum keypressSurfaces {
-	SURFACE_DEFAULT,
-	SURFACE_UP,
-	SURFACE_DOWN,
-	SURFACE_LEFT,
-	SURFACE_RIGHT,
-	SURFACE_TOTAL
-
-};
-
-
-SDL_Surface* arrowSurfaces[SURFACE_TOTAL];
-
-
+SDL_Texture* gTexture = NULL;
+SDL_Renderer* gRenderer = NULL;
 
 bool init()
 {
@@ -58,15 +41,23 @@ bool init()
 		else
 		{
 
-			int imgFlags = IMG_INIT_PNG;
-			if(!(IMG_Init(imgFlags) & imgFlags))
+			gRenderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+
+			if(gRenderer == NULL)
 			{
 				printf("Error in initializing SDL_Image library. \nSDL Error: %s\n", SDL_GetError());
 				success = false;
 			}
 			else
 			{
-				windowSurface = SDL_GetWindowSurface(window);
+				SDL_SetRenderDrawColor(gRenderer, 0xFF, 0xFF, 0xFF, 0xFF);
+
+				int imgFlags = IMG_INIT_PNG;
+				if(!(IMG_Init(imgFlags) & imgFlags))
+				{
+					printf("Error in initializing SDL_Image library. \nSDL Error: %s\n", SDL_GetError());
+					success = false;
+				}
 			}
 		}
 	}
@@ -79,36 +70,8 @@ bool loadMedia()
 {
 	bool success = true;
 
-	arrowSurfaces[SURFACE_DEFAULT] = IMG_Load("images\\loaded.png");
-	if(arrowSurfaces[SURFACE_DEFAULT] == NULL)
-	{
-		printf("Failed to load default image.\nSDL Error: %s", SDL_GetError());
-		success = false;
-	}
-
-	arrowSurfaces[SURFACE_UP] = loadImage("images\\up.bmp");
-	if(arrowSurfaces[SURFACE_UP] == NULL)
-	{
-		printf("Failed to load up image.\nSDL Error: %s", SDL_GetError());
-		success = false;
-	}
-
-	arrowSurfaces[SURFACE_DOWN] = loadImage("images\\down.bmp");
-	if(arrowSurfaces[SURFACE_DOWN] == NULL)
-	{
-		printf("Failed to load default image.\nSDL Error: %s", SDL_GetError());
-		success = false;
-	}
-
-	arrowSurfaces[SURFACE_LEFT] = loadImage("images\\left.bmp");
-	if(arrowSurfaces[SURFACE_LEFT] == NULL)
-	{
-		printf("Failed to load left image.\nSDL Error: %s", SDL_GetError());
-		success = false;
-	}
-
-	arrowSurfaces[SURFACE_RIGHT] = loadImage("images\\right.bmp");
-	if(arrowSurfaces[SURFACE_RIGHT] == NULL)
+	gTexture = loadTexture("images\\texture.png");
+	if(gTexture == NULL)
 	{
 		printf("Failed to load default image.\nSDL Error: %s", SDL_GetError());
 		success = false;
@@ -118,29 +81,30 @@ bool loadMedia()
 }
 
 
-SDL_Surface* loadImage(std::string filepath)
+SDL_Texture* loadTexture(std::string filepath)
 {
-	SDL_Surface* optimizedImage = NULL;
+	SDL_Texture* newTexture = NULL;
 
-	SDL_Surface* image = SDL_LoadBMP(filepath.c_str());
+	SDL_Surface* image = IMG_Load(filepath.c_str());
+
 	if(image == NULL)
 	{
 		printf("Error in loading the image file.\nSDL Error: %s", SDL_GetError());
 	}
 	else
 	{
-		optimizedImage = SDL_ConvertSurface(image, windowSurface->format, NULL);
+		newTexture = SDL_CreateTextureFromSurface(gRenderer, image);
 
-		if(optimizedImage == NULL)
+		if(newTexture == NULL)
 		{
-			printf("Error in creating the optimized image.\nSDL Error: %s", SDL_GetError());
+			printf("Error in creating the texture.\nSDL Error: %s", SDL_GetError());
 		}
 
 		SDL_FreeSurface(image);
 
 	}
 
-	return optimizedImage;
+	return newTexture;
 }
 
 
@@ -150,10 +114,14 @@ SDL_Surface* loadImage(std::string filepath)
 
 void close()
 {
-	SDL_FreeSurface(imageSurface);
-	imageSurface = NULL;
+	SDL_DestroyTexture(gTexture);
+	gTexture = NULL;
 
 	SDL_DestroyWindow(window);
+	SDL_DestroyRenderer(gRenderer);
+	window = NULL;
+	gRenderer = NULL;
+
 	SDL_Quit();
 }
 
@@ -177,11 +145,6 @@ int main(int argc, char* argv[])
 			bool quit = false;
 			SDL_Event e;
 
-
-			SDL_Surface* currentSurface = arrowSurfaces[SURFACE_DEFAULT];
-
-
-
 			while(!quit)
 			{
 				while(SDL_PollEvent(&e) != 0)
@@ -190,59 +153,19 @@ int main(int argc, char* argv[])
 					{
 						quit = true;
 					}
-					else if(e.type == SDL_KEYDOWN)
-					{
-						switch(e.key.keysym.sym)
-						{
-							case SDLK_UP:
-							currentSurface = arrowSurfaces[SURFACE_UP];
-							break;
-
-							case SDLK_DOWN:
-							currentSurface = arrowSurfaces[SURFACE_DOWN];
-							break;
-
-							case SDLK_LEFT:
-							currentSurface = arrowSurfaces[SURFACE_LEFT];
-							break;
-
-							case SDLK_RIGHT:
-							currentSurface = arrowSurfaces[SURFACE_RIGHT];
-							break;
-
-							default:
-							currentSurface = arrowSurfaces[SURFACE_DEFAULT];
-							break;
-						}
-					}
-					else
-					{
-						currentSurface = arrowSurfaces[SURFACE_DEFAULT];
-					}
-
 				}
 
-				SDL_Rect stretchRect;
+				SDL_RenderClear(gRenderer);
 
-				stretchRect.x = 0;
-				stretchRect.y = 0;
-				stretchRect.h = SCREEN_HEIGHT;
-				stretchRect.w = SCREEN_WIDTH;
+				SDL_RenderCopy(gRenderer, gTexture, NULL, NULL);
 
+				SDL_RenderPresent(gRenderer);
 
-				SDL_FillRect(windowSurface, NULL, SDL_MapRGB(windowSurface->format, 0x00, 0x00, 0x00));
-
-				SDL_BlitScaled(currentSurface, NULL, windowSurface, &stretchRect);
-
-				SDL_UpdateWindowSurface(window);
-
-				SDL_Delay(15);
-
+				SDL_Delay(1);
 			}
 
 		}
 	}
-
 
 	close();
 
