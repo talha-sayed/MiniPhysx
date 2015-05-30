@@ -40,7 +40,6 @@ bool init()
 		}
 		else
 		{
-
 			gRenderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
 
 			if(gRenderer == NULL)
@@ -127,6 +126,21 @@ void close()
 
 
 
+void drawShapes()
+{
+	SDL_Rect fillRect = { SCREEN_WIDTH/4, SCREEN_HEIGHT/4, SCREEN_WIDTH/2, SCREEN_HEIGHT/2};
+	SDL_SetRenderDrawColor(gRenderer, 0xFF, 0, 0, 0xFF);
+	SDL_RenderFillRect(gRenderer, &fillRect);
+
+	SDL_Rect outlineRect = { SCREEN_WIDTH/6, SCREEN_HEIGHT/6, SCREEN_WIDTH*2/3, SCREEN_HEIGHT*2/3};
+	SDL_SetRenderDrawColor(gRenderer, 0, 0, 0xFF, 0xFF);
+	SDL_RenderDrawRect(gRenderer, &outlineRect);
+
+	SDL_SetRenderDrawColor(gRenderer, 0, 0xFF, 0, 0xFF);
+	SDL_RenderDrawLine(gRenderer, 0, SCREEN_HEIGHT/2, SCREEN_WIDTH, SCREEN_HEIGHT/2);
+}
+
+
 int main(int argc, char* argv[])
 {
 
@@ -158,6 +172,8 @@ int main(int argc, char* argv[])
 				SDL_RenderClear(gRenderer);
 
 				SDL_RenderCopy(gRenderer, gTexture, NULL, NULL);
+
+				drawShapes();
 
 				SDL_RenderPresent(gRenderer);
 
