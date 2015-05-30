@@ -229,6 +229,9 @@ int main(int argc, char* argv[])
 				stretchRect.h = SCREEN_HEIGHT;
 				stretchRect.w = SCREEN_WIDTH;
 
+
+				SDL_FillRect(windowSurface, NULL, SDL_MapRGB(windowSurface->format, 0x00, 0x00, 0x00));
+
 				SDL_BlitScaled(currentSurface, NULL, windowSurface, &stretchRect);
 
 				SDL_UpdateWindowSurface(window);
