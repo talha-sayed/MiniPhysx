@@ -5,6 +5,7 @@
 #include <iostream>
 #include <stdio.h>
 #include <string>
+#include <cmath>
 
 const int SCREEN_WIDTH = 800;
 const int SCREEN_HEIGHT = 600;
@@ -18,7 +19,7 @@ SDL_Texture* loadTexture(std::string);
 
 SDL_Window* window = NULL;
 SDL_Texture* gTexture = NULL;
-SDL_Texture* viewportTexture = NULL;
+SDL_Texture* characterTexture = NULL;
 SDL_Renderer* gRenderer = NULL;
 
 bool init()
@@ -41,6 +42,8 @@ bool init()
 		}
 		else
 		{
+			std::cout<<"Initialized correctly !"<<std::endl;
+
 			gRenderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
 
 			if(gRenderer == NULL)
@@ -70,15 +73,15 @@ bool loadMedia()
 {
 	bool success = true;
 
-	gTexture = loadTexture("images\\texture.png");
+	gTexture = loadTexture("images\\background.png");
 	if(gTexture == NULL)
 	{
 		printf("Failed to load default image.\nSDL Error: %s", SDL_GetError());
 		success = false;
 	}
 
-	viewportTexture = loadTexture("images\\map.jpg");
-	if(viewportTexture == NULL)
+	characterTexture = loadTexture("images\\character.png");
+	if(characterTexture == NULL)
 	{
 		printf("Failed to load map image.\nSDL Error: %s", SDL_GetError());
 		success = false;
@@ -124,8 +127,8 @@ void close()
 	SDL_DestroyTexture(gTexture);
 	gTexture = NULL;
 
-	SDL_DestroyTexture(viewportTexture);
-	viewportTexture = NULL;
+	SDL_DestroyTexture(characterTexture);
+	characterTexture = NULL;
 
 	SDL_DestroyWindow(window);
 	SDL_DestroyRenderer(gRenderer);
@@ -151,26 +154,41 @@ void drawShapes()
 	SDL_RenderDrawLine(gRenderer, 0, SCREEN_HEIGHT/2, SCREEN_WIDTH, SCREEN_HEIGHT/2);
 }
 
-int index = 1;
+double index = 1;
 
 
-void displayInViewPort()
+void display()
 {
-	SDL_Rect viewPort;
+	SDL_Rect renderRect;
 
-	viewPort.x = 0;
-	viewPort.y = 0;
-	viewPort.h = SCREEN_HEIGHT/2;
-	viewPort.w = SCREEN_WIDTH/2;
-	SDL_RenderSetViewport(gRenderer, &viewPort);
+	index++;
 
-	viewPort.x = 100;
-	viewPort.y = 100;
-	viewPort.h = SCREEN_HEIGHT/6;
-	viewPort.w = SCREEN_WIDTH/6;
-	SDL_RenderCopy(gRenderer, viewportTexture, NULL, &viewPort);
+	double heightOffset = (std::sin(index/70) * 10);
+	double widthOffset = (int)index/6 % 500;
 
-	SDL_RenderSetViewport(gRenderer, NULL);
+//	double heightOffset = (std::sin(index/100) * 100);
+//	double widthOffset = (std::cos(index/100) * 100);
+
+	renderRect.x = 100 + widthOffset;
+	renderRect.y = 280 + heightOffset;
+
+	int w = 0;
+	int h = 0;
+
+	if(SDL_QueryTexture(characterTexture, NULL, NULL, &w, &h) != 0)
+	{
+		std::cout<<"Error in getting the texture properties. Cannot render the texture.\n"<< SDL_GetError();
+	}
+	else
+	{
+		renderRect.h = h;
+		renderRect.w = w;
+
+		std::cout<<"Height is "<< h <<" pixels\n";
+		std::cout<<"Width is "<< w <<" pixels\n\n"<<std::endl;
+
+		SDL_RenderCopy(gRenderer, characterTexture, NULL, &renderRect);
+	}
 }
 
 int main(int argc, char* argv[])
@@ -204,8 +222,7 @@ int main(int argc, char* argv[])
 
 				SDL_RenderCopy(gRenderer, gTexture, NULL, NULL);
 
-				//drawShapes();
-				displayInViewPort();
+				display();
 
 				SDL_RenderPresent(gRenderer);
 
