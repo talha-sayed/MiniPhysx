@@ -20,6 +20,7 @@ SDL_Texture* loadTexture(std::string);
 SDL_Window* window = NULL;
 SDL_Texture* gTexture = NULL;
 SDL_Texture* characterTexture = NULL;
+SDL_Texture* spriteTexture = NULL;
 SDL_Renderer* gRenderer = NULL;
 
 bool init()
@@ -87,6 +88,13 @@ bool loadMedia()
 		success = false;
 	}
 
+	spriteTexture = loadTexture("images\\sprites.png");
+	if(spriteTexture == NULL)
+	{
+		printf("Failed to load map image.\nSDL Error: %s", SDL_GetError());
+		success = false;
+	}
+
 	return success;
 }
 
@@ -132,6 +140,9 @@ void close()
 
 	SDL_DestroyTexture(characterTexture);
 	characterTexture = NULL;
+
+	SDL_DestroyTexture(spriteTexture);
+	spriteTexture = NULL;
 
 	SDL_DestroyWindow(window);
 	SDL_DestroyRenderer(gRenderer);
@@ -187,11 +198,13 @@ void display()
 		renderRect.h = h;
 		renderRect.w = w;
 
-		//std::cout<<"Height is "<< h <<" pixels\n";
-		//std::cout<<"Width is "<< w <<" pixels\n\n"<<std::endl;
-
 		SDL_RenderCopy(gRenderer, characterTexture, NULL, &renderRect);
 	}
+
+	SDL_Rect clipRect = { 0, 100, 100, 100 };
+	SDL_Rect posRect = {500, 200, 100, 100};
+	SDL_RenderCopy(gRenderer, spriteTexture, &clipRect, &posRect);
+
 }
 
 int main(int argc, char* argv[])
