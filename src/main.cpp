@@ -103,6 +103,9 @@ SDL_Texture* loadTexture(std::string filepath)
 	}
 	else
 	{
+
+		SDL_SetColorKey(image, SDL_TRUE, SDL_MapRGB(image->format, 0, 0xFF, 0xFF));
+
 		newTexture = SDL_CreateTextureFromSurface(gRenderer, image);
 
 		if(newTexture == NULL)
@@ -184,8 +187,8 @@ void display()
 		renderRect.h = h;
 		renderRect.w = w;
 
-		std::cout<<"Height is "<< h <<" pixels\n";
-		std::cout<<"Width is "<< w <<" pixels\n\n"<<std::endl;
+		//std::cout<<"Height is "<< h <<" pixels\n";
+		//std::cout<<"Width is "<< w <<" pixels\n\n"<<std::endl;
 
 		SDL_RenderCopy(gRenderer, characterTexture, NULL, &renderRect);
 	}
