@@ -198,7 +198,7 @@ void display()
 		renderRect.h = h;
 		renderRect.w = w;
 
-		SDL_RenderCopy(gRenderer, characterTexture, NULL, &renderRect);
+		SDL_RenderCopyEx(gRenderer, characterTexture, NULL, &renderRect, (index/3), NULL, SDL_FLIP_NONE );
 	}
 
 	SDL_Rect clipRect = { 0, 100, 100, 100 };
