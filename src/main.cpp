@@ -14,14 +14,35 @@ const int SCREEN_HEIGHT = 600;
 bool init();
 bool loadMedia();
 void close();
+void printDebugInfo();
 SDL_Texture* loadTexture(std::string);
 
 
 SDL_Window* window = NULL;
-SDL_Texture* gTexture = NULL;
+SDL_Texture* bgTexture = NULL;
 SDL_Texture* characterTexture = NULL;
 SDL_Texture* spriteTexture = NULL;
 SDL_Renderer* gRenderer = NULL;
+
+SDL_Rect renderRect;
+bool canJump;
+bool isJump = false;
+
+long counter = 0;
+
+double integralY = 50;
+double integralX = 320;
+
+double deltaY = 0;
+double deltaX = 0;
+
+double accelY = 0;
+double accelX = 0;
+
+double gravForce = 0.00003;
+
+
+double impactSpeed = 0;
 
 bool init()
 {
@@ -74,8 +95,8 @@ bool loadMedia()
 {
 	bool success = true;
 
-	gTexture = loadTexture("images\\background.png");
-	if(gTexture == NULL)
+	bgTexture = loadTexture("images\\background.png");
+	if(bgTexture == NULL)
 	{
 		printf("Failed to load default image.\nSDL Error: %s", SDL_GetError());
 		success = false;
@@ -87,6 +108,8 @@ bool loadMedia()
 		printf("Failed to load map image.\nSDL Error: %s", SDL_GetError());
 		success = false;
 	}
+	renderRect.w = 64;
+	renderRect.h = 128;
 
 	spriteTexture = loadTexture("images\\sprites.png");
 	if(spriteTexture == NULL)
@@ -130,13 +153,10 @@ SDL_Texture* loadTexture(std::string filepath)
 
 
 
-
-
-
 void close()
 {
-	SDL_DestroyTexture(gTexture);
-	gTexture = NULL;
+	SDL_DestroyTexture(bgTexture);
+	bgTexture = NULL;
 
 	SDL_DestroyTexture(characterTexture);
 	characterTexture = NULL;
@@ -168,44 +188,121 @@ void drawShapes()
 	SDL_RenderDrawLine(gRenderer, 0, SCREEN_HEIGHT/2, SCREEN_WIDTH, SCREEN_HEIGHT/2);
 }
 
-double index = 1;
 
 
-void display()
+
+void update()
 {
-	SDL_Rect renderRect;
 
-	index++;
 
-	double heightOffset = (std::sin(index/70) * 10);
-	double widthOffset = (int)index/6 % 500;
-
-//	double heightOffset = (std::sin(index/100) * 100);
-//	double widthOffset = (std::cos(index/100) * 100);
-
-	renderRect.x = 100 + widthOffset;
-	renderRect.y = 280 + heightOffset;
-
-	int w = 0;
-	int h = 0;
-
-	if(SDL_QueryTexture(characterTexture, NULL, NULL, &w, &h) != 0)
+	if(impactSpeed < 0.0002 && impactSpeed != 0)
 	{
-		std::cout<<"Error in getting the texture properties. Cannot render the texture.\n"<< SDL_GetError();
+		impactSpeed = 0;
+		deltaY = 0;
+		integralY = 250;
 	}
-	else
-	{
-		renderRect.h = h;
-		renderRect.w = w;
 
-		SDL_RenderCopyEx(gRenderer, characterTexture, NULL, &renderRect, (index/3), NULL, SDL_FLIP_NONE );
+	if(integralY >= 250 && deltaY == 0 && impactSpeed != 0)
+	{
+		deltaY = -impactSpeed*0.4;
+
+		std::cout << "deltaY: " << deltaY << " " << "impactSpeed: " << impactSpeed  << renderRect.h;
+		std::cout << std::endl;
 	}
+
+	if(isJump)
+	{
+		if(integralY == 250)
+		{
+			deltaY = -0.08;
+		}
+
+		isJump = false;
+	}
+
+
+	deltaY += accelY + gravForce;
+	deltaX += accelX;
+
+
+	integralY += deltaY;
+	integralX += deltaX;
+
+
+
+
+
+	if(integralX >= 750)
+	{
+		integralX = 750;
+		deltaX = 0;
+	}
+
+	if(integralX <= 0)
+	{
+		integralX = 0;
+		deltaX = 0;
+	}
+
+
+	if(integralY >= 250)
+	{
+		integralY = 250;
+		impactSpeed = deltaY;
+		deltaY = 0;
+	}
+	if(integralY <= 0)
+	{
+		integralY = 0;
+		deltaY = 0;
+	}
+
+
+	renderRect.y = integralY;
+	renderRect.x = integralX;
+
+
+
+
+	printDebugInfo();
+
+	counter++;
+}
+
+
+void render()
+{
+	SDL_RenderClear(gRenderer);
+	SDL_RenderCopy(gRenderer, bgTexture, NULL, NULL);
+
+
+
+
+
+
+	SDL_RenderCopyEx(gRenderer, characterTexture, NULL, &renderRect, 0, NULL, SDL_FLIP_NONE );
 
 	SDL_Rect clipRect = { 0, 100, 100, 100 };
 	SDL_Rect posRect = {500, 200, 100, 100};
 	SDL_RenderCopy(gRenderer, spriteTexture, &clipRect, &posRect);
 
+	SDL_RenderPresent(gRenderer);
+
 }
+
+
+void printDebugInfo()
+{
+	if(counter % 10000 == 0)
+	{
+//		std::cout << "deltaY: " << deltaY << "  ";
+//		std::cout << "deltaX: " << deltaX << " " << renderRect.h;
+//		std::cout << std::endl;
+		//std::cout<<"widthOffset: "<<widthOffset<<std::endl;
+	}
+}
+
+
 
 int main(int argc, char* argv[])
 {
@@ -224,6 +321,10 @@ int main(int argc, char* argv[])
 			bool quit = false;
 			SDL_Event e;
 
+
+
+
+
 			while(!quit)
 			{
 				while(SDL_PollEvent(&e) != 0)
@@ -232,17 +333,63 @@ int main(int argc, char* argv[])
 					{
 						quit = true;
 					}
+
+					if(e.type == SDL_KEYDOWN)
+					{
+						switch(e.key.keysym.sym)
+						{
+						case SDLK_UP:
+						break;
+
+						case SDLK_DOWN:
+						break;
+
+						case SDLK_RIGHT:
+							deltaX = 0.05;
+						break;
+
+						case SDLK_LEFT:
+							deltaX = -0.05;
+						break;
+
+						case SDLK_SPACE:
+							isJump = true;
+						break;
+						}
+					}
+
+					if(e.type == SDL_KEYUP)
+					{
+						switch(e.key.keysym.sym)
+						{
+						case SDLK_UP:
+						break;
+
+						case SDLK_DOWN:
+						break;
+
+						case SDLK_RIGHT:
+							deltaX = 0;
+						break;
+
+						case SDLK_LEFT:
+							deltaX = 0;
+						break;
+						}
+					}
 				}
 
-				SDL_RenderClear(gRenderer);
+//				if(renderRect.y >= 250) canJump = true;
+//				else canJump = false;
 
-				SDL_RenderCopy(gRenderer, gTexture, NULL, NULL);
 
-				display();
+				update();
 
-				SDL_RenderPresent(gRenderer);
+				render();
 
-				SDL_Delay(1);
+
+
+				//SDL_Delay(1);
 			}
 
 		}

@@ -8,7 +8,7 @@
 #include "game.h"
 #include <iostream>
 
-namespace miniphysics {
+namespace miniphysx {
 
 game::game() {
 	// TODO Auto-generated constructor stub
@@ -26,6 +26,18 @@ void game::start() {
 	std::cout<<"The game has started !";
 }
 
+
+
+void game::render() {
+
+	std::cout<<"The game has started !";
+}
+
+
+void game::update() {
+
+	std::cout<<"The game has started !";
+}
 
 
 

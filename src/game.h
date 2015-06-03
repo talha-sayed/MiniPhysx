@@ -8,7 +8,7 @@
 #ifndef SRC_GAME_H_
 #define SRC_GAME_H_
 
-namespace miniphysics {
+namespace miniphysx {
 
 class game {
 public:
@@ -16,8 +16,17 @@ public:
 	virtual ~game();
 
 	void start();
+	void render();
+	void update();
+
+
+private:
+	int windowHeight;
+	int windowWidth;
+
+
 };
 
-} /* namespace miniphysics */
+} /* namespace miniphysx */
 
 #endif /* SRC_GAME_H_ */
