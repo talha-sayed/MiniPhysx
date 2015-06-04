@@ -321,10 +321,6 @@ int main(int argc, char* argv[])
 			bool quit = false;
 			SDL_Event e;
 
-
-
-
-
 			while(!quit)
 			{
 				while(SDL_PollEvent(&e) != 0)
@@ -334,49 +330,77 @@ int main(int argc, char* argv[])
 						quit = true;
 					}
 
-					if(e.type == SDL_KEYDOWN)
+
+					const Uint8* currentKeyStates = SDL_GetKeyboardState( NULL );
+
+					if(currentKeyStates[ SDL_SCANCODE_LEFT ] && currentKeyStates[ SDL_SCANCODE_RIGHT ])
 					{
-						switch(e.key.keysym.sym)
-						{
-						case SDLK_UP:
-						break;
-
-						case SDLK_DOWN:
-						break;
-
-						case SDLK_RIGHT:
-							deltaX = 0.05;
-						break;
-
-						case SDLK_LEFT:
-							deltaX = -0.05;
-						break;
-
-						case SDLK_SPACE:
-							isJump = true;
-						break;
-						}
+						deltaX = 0;
+					}
+					else if( currentKeyStates[ SDL_SCANCODE_RIGHT ] )
+					{
+						deltaX = 0.05;
+					}
+					else if( currentKeyStates[ SDL_SCANCODE_LEFT ] )
+					{
+						deltaX = -0.05;
+					}
+					else
+					{
+						deltaX = 0;
+						deltaY = 0;
 					}
 
-					if(e.type == SDL_KEYUP)
+					if (currentKeyStates[ SDL_SCANCODE_SPACE])
 					{
-						switch(e.key.keysym.sym)
-						{
-						case SDLK_UP:
-						break;
-
-						case SDLK_DOWN:
-						break;
-
-						case SDLK_RIGHT:
-							deltaX = 0;
-						break;
-
-						case SDLK_LEFT:
-							deltaX = 0;
-						break;
-						}
+						 isJump = true;
 					}
+
+
+
+//					if(e.type == SDL_KEYDOWN)
+//					{
+//						switch(e.key.keysym.sym)
+//						{
+//						case SDLK_UP:
+//						break;
+//
+//						case SDLK_DOWN:
+//						break;
+//
+//						case SDLK_RIGHT:
+//							deltaX = 0.05;
+//						break;
+//
+//						case SDLK_LEFT:
+//							deltaX = -0.05;
+//						break;
+//
+//						case SDLK_SPACE:
+//							isJump = true;
+//						break;
+//						}
+//					}
+//
+//					if(e.type == SDL_KEYUP)
+//					{
+//						switch(e.key.keysym.sym)
+//						{
+//						case SDLK_UP:
+//						break;
+//
+//						case SDLK_DOWN:
+//						break;
+//
+//						case SDLK_RIGHT:
+//							deltaX = 0;
+//						break;
+//
+//						case SDLK_LEFT:
+//							deltaX = 0;
+//						break;
+//						}
+//					}
 				}
 
 //				if(renderRect.y >= 250) canJump = true;
