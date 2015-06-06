@@ -6,6 +6,7 @@
 #include <iostream>
 #include <stdio.h>
 #include <string>
+#include <sstream>
 #include <cmath>
 
 const int SCREEN_WIDTH = 800;
@@ -53,6 +54,8 @@ double impactSpeed = 0;
 int textHeight = 0;
 int textWidth = 0;
 
+Uint32 elapsedFrames = 0;
+Uint32 elapsedTicks = 0;
 
 
 bool init()
@@ -191,7 +194,7 @@ SDL_Texture* loadFontTexture(std::string text, SDL_Color textColor)
 {
 	SDL_Texture* newTexture = NULL;
 
-	SDL_Surface* image = TTF_RenderText_Solid(gFont, text.c_str(), textColor);
+	SDL_Surface* image = TTF_RenderText_Blended_Wrapped(gFont, text.c_str(), textColor, 150);
 
 	if(image == NULL)
 	{
@@ -267,6 +270,32 @@ int jumpIndex = 0;
 void update()
 {
 
+	elapsedFrames++;
+
+	Uint32 currentTicks = SDL_GetTicks();
+
+
+
+	if(currentTicks >= elapsedTicks + 1000)
+	{
+		elapsedTicks += 1000;
+
+		std::stringstream ss;
+
+		ss<<"FPS: "<< elapsedFrames <<"\n hello";
+
+		if(gTextTexture != NULL)
+		{
+			SDL_DestroyTexture(gTextTexture);
+		}
+
+		SDL_Color textColor = { 0, 0, 0};
+
+		gTextTexture = loadFontTexture( ss.str(), textColor);
+
+		ss.str("");
+		elapsedFrames = 0;
+	}
 
 	if(impactSpeed < 0.0002 && impactSpeed != 0)
 	{
@@ -301,9 +330,6 @@ void update()
 
 	integralY += deltaY;
 	integralX += deltaX;
-
-
-
 
 
 	if(integralX >= 750)
@@ -353,7 +379,7 @@ void render()
 	SDL_RenderClear(gRenderer);
 	SDL_RenderCopy(gRenderer, bgTexture, NULL, NULL);
 
-	SDL_Rect fontRenderRect = { 600, 550, textWidth, textHeight};
+	SDL_Rect fontRenderRect = { 550, 550, textWidth, textHeight};
 
 	SDL_RenderCopy(gRenderer, gTextTexture, NULL, &fontRenderRect);
 
@@ -362,6 +388,7 @@ void render()
 	SDL_Rect clipRect = { 0, 100, 100, 100 };
 	SDL_Rect posRect = {500, 200, 100, 100};
 	SDL_RenderCopy(gRenderer, spriteTexture, &clipRect, &posRect);
+
 
 	SDL_RenderPresent(gRenderer);
 
