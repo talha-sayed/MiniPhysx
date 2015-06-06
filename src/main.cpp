@@ -9,9 +9,11 @@
 #include <sstream>
 #include <cmath>
 
-const int SCREEN_WIDTH = 800;
-const int SCREEN_HEIGHT = 600;
+const int SCREEN_WIDTH = 1920;
+const int SCREEN_HEIGHT = 1200;
 
+const int JUMP_HEIGHT = 600;
+const int GROUND_HEIGHT = 615;
 
 bool init();
 bool loadMedia();
@@ -45,7 +47,7 @@ double deltaX = 0;
 double accelY = 0;
 double accelX = 0;
 
-double gravForce = 0.00003;
+double gravForce = 0.13;
 
 
 double impactSpeed = 0;
@@ -58,6 +60,11 @@ Uint32 elapsedFrames = 0;
 Uint32 elapsedTicks = 0;
 
 
+SDL_Point *pointsArray = NULL;
+int pointIndex = 0;
+bool showTrails = true;
+const int NUM_POINTS = 1000;
+
 bool init()
 {
 	bool success = true;
@@ -69,7 +76,7 @@ bool init()
 	}
 	else
 	{
-		window = SDL_CreateWindow("MiniPhysx Demo Image", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
+		window = SDL_CreateWindow("MiniPhysx Demo Image", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_FULLSCREEN_DESKTOP);
 
 		if(window == NULL)
 		{
@@ -104,6 +111,13 @@ bool init()
 					printf("Could not initialize SDL_ttf. Error: %s\n", TTF_GetError());
 					success = false;
 				}
+
+				pointsArray = new SDL_Point[NUM_POINTS];
+				for(int i = 0; i < NUM_POINTS; i++)
+				{
+					pointsArray[i].x = pointsArray[i].y = -1;
+				}
+
 			}
 		}
 	}
@@ -266,23 +280,29 @@ void drawShapes()
 
 
 int jumpIndex = 0;
+Uint32 lastMeasured = 0;
+Uint32 currentUpdateCount = 0;
+
+
+bool isAirborne = false;
 
 void update()
 {
 
-	elapsedFrames++;
+//	std::cout<<"Update is run"<<std::endl;
+
 
 	Uint32 currentTicks = SDL_GetTicks();
 
 
 
-	if(currentTicks >= elapsedTicks + 1000)
+	if(currentTicks >= lastMeasured + 1000)
 	{
-		elapsedTicks += 1000;
+		lastMeasured += 1000;
 
 		std::stringstream ss;
 
-		ss<<"FPS: "<< elapsedFrames <<"\n hello";
+		ss<<"FPS: "<< currentUpdateCount <<"\n hello";
 
 		if(gTextTexture != NULL)
 		{
@@ -294,17 +314,19 @@ void update()
 		gTextTexture = loadFontTexture( ss.str(), textColor);
 
 		ss.str("");
-		elapsedFrames = 0;
+
+		currentUpdateCount = 0;
 	}
+
 
 	if(impactSpeed < 0.0002 && impactSpeed != 0)
 	{
 		impactSpeed = 0;
 		deltaY = 0;
-		integralY = 250;
+		integralY = GROUND_HEIGHT;
 	}
 
-	if(integralY >= 250 && deltaY == 0 && impactSpeed != 0)
+	if(integralY >= GROUND_HEIGHT && deltaY == 0 && impactSpeed != 0)
 	{
 		deltaY = -impactSpeed*0.4;
 
@@ -314,9 +336,9 @@ void update()
 
 	if(isJump)
 	{
-		if(integralY >= 230)
+		if(integralY >= JUMP_HEIGHT)
 		{
-			deltaY = -0.08;
+			deltaY = -7;
 //			std::cout<<"Jumped "<< jumpIndex++ <<" times" << std::endl;
 		}
 
@@ -332,9 +354,9 @@ void update()
 	integralX += deltaX;
 
 
-	if(integralX >= 750)
+	if(integralX >= SCREEN_WIDTH-50)
 	{
-		integralX = 750;
+		integralX = SCREEN_WIDTH-50;
 		deltaX = 0;
 	}
 
@@ -345,9 +367,9 @@ void update()
 	}
 
 
-	if(integralY >= 250)
+	if(integralY >= GROUND_HEIGHT)
 	{
-		integralY = 250;
+		integralY = GROUND_HEIGHT;
 		impactSpeed = deltaY;
 		deltaY = 0;
 	}
@@ -358,18 +380,26 @@ void update()
 	}
 
 
-	if(integralY >= 230) canJump = true;
+	if(integralY >= JUMP_HEIGHT) canJump = true;
 	else canJump = false;
 
 
 	renderRect.y = integralY;
 	renderRect.x = integralX;
 
+	if(showTrails)
+	{
+		pointsArray[++pointIndex].x = integralX;
+		pointsArray[pointIndex].y = integralY;
 
+		if(pointIndex >= NUM_POINTS-1 ) pointIndex = 0;
+
+	}
 
 
 	printDebugInfo();
 
+	currentUpdateCount++;
 	counter++;
 }
 
@@ -379,15 +409,21 @@ void render()
 	SDL_RenderClear(gRenderer);
 	SDL_RenderCopy(gRenderer, bgTexture, NULL, NULL);
 
-	SDL_Rect fontRenderRect = { 550, 550, textWidth, textHeight};
 
-	SDL_RenderCopy(gRenderer, gTextTexture, NULL, &fontRenderRect);
 
-	SDL_RenderCopyEx(gRenderer, characterTexture, NULL, &renderRect, 0, NULL, SDL_FLIP_NONE );
+	SDL_RenderDrawPoints(gRenderer, pointsArray, 1000);
+
 
 	SDL_Rect clipRect = { 0, 100, 100, 100 };
 	SDL_Rect posRect = {500, 200, 100, 100};
 	SDL_RenderCopy(gRenderer, spriteTexture, &clipRect, &posRect);
+
+
+	SDL_Rect fontRenderRect = { 550, 550, textWidth, textHeight};
+	SDL_RenderCopy(gRenderer, gTextTexture, NULL, &fontRenderRect);
+
+	SDL_RenderCopyEx(gRenderer, characterTexture, NULL, &renderRect, 0, NULL, SDL_FLIP_NONE );
+
 
 
 	SDL_RenderPresent(gRenderer);
@@ -433,33 +469,80 @@ int main(int argc, char* argv[])
 					{
 						quit = true;
 					}
+					if(e.type == SDL_KEYDOWN && e.key.keysym.sym == SDLK_ESCAPE)
+					{
+						quit = true;
+					}
+				}
+
+				//beginning code
+
+				if(integralY < GROUND_HEIGHT) isAirborne = true;
+				else isAirborne = false;
 
 
-					const Uint8* currentKeyStates = SDL_GetKeyboardState( NULL );
+				if(deltaX*deltaX < 0.0001) deltaX = 0;
+				//*********************
 
-					if(currentKeyStates[ SDL_SCANCODE_LEFT ] && currentKeyStates[ SDL_SCANCODE_RIGHT ])
-					{
-						deltaX = 0;
-					}
-					else if( currentKeyStates[ SDL_SCANCODE_RIGHT ] )
-					{
-						deltaX = 0.05;
-					}
-					else if( currentKeyStates[ SDL_SCANCODE_LEFT ] )
-					{
-						deltaX = -0.05;
-					}
-					else
-					{
-						deltaX = 0;
-						deltaY = 0;
-					}
+				const Uint8* currentKeyStates = SDL_GetKeyboardState( NULL );
 
-					if (currentKeyStates[ SDL_SCANCODE_SPACE] && canJump == true)
-					{
-						 isJump = true;
-					}
 
+				if(currentKeyStates[ SDL_SCANCODE_LEFT ] && currentKeyStates[ SDL_SCANCODE_RIGHT ])
+				{
+					//deltaX = 0;
+				}
+				else if (!currentKeyStates[ SDL_SCANCODE_LEFT ] && !currentKeyStates[ SDL_SCANCODE_RIGHT ])
+				{
+					if(integralY >= GROUND_HEIGHT)
+					{
+						deltaX = deltaX*0.999985;
+					}
+				}
+				else if( currentKeyStates[ SDL_SCANCODE_RIGHT ] )
+				{
+					if(isAirborne)
+					{
+						if(deltaX < 0) deltaX = deltaX*0.999999855;
+						else deltaX = 5;
+					}
+					else deltaX = 5;
+				}
+				else if( currentKeyStates[ SDL_SCANCODE_LEFT ] )
+				{
+					if(isAirborne)
+					{
+						if(deltaX > 0) deltaX = deltaX*0.999999855;
+						else deltaX = -5;
+					}
+					else deltaX = -5;
+				}
+				else
+				{
+//						deltaX = 0;
+//						deltaY = 0;
+				}
+
+				if (currentKeyStates[ SDL_SCANCODE_SPACE] && canJump == true)
+				{
+					 isJump = true;
+				}
+
+				if (currentKeyStates[ SDL_SCANCODE_C])
+				{
+					 for(int i=0; i < NUM_POINTS; i++)
+					 {
+						 pointsArray[i].x = pointsArray[i].y = -1;
+					 }
+				}
+
+				if (currentKeyStates[ SDL_SCANCODE_P])
+				{
+					 showTrails = false;
+				}
+				if (currentKeyStates[ SDL_SCANCODE_S])
+				{
+					 showTrails = true;
+				}
 
 
 //					if(e.type == SDL_KEYDOWN)
@@ -505,13 +588,26 @@ int main(int argc, char* argv[])
 //						break;
 //						}
 //					}
+
+
+
+
+				elapsedFrames++;
+
+				Uint32 currentTicks = SDL_GetTicks();
+
+
+
+				if(currentTicks >= elapsedTicks + 10)
+				{
+					elapsedTicks += 10;
+
+					update();
+
+					render();
 				}
 
 
-
-				update();
-
-				render();
 
 			}
 
