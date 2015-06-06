@@ -2,6 +2,7 @@
 
 #include <SDL.h>
 #include <SDL_image.h>
+#include <SDL_ttf.h>
 #include <iostream>
 #include <stdio.h>
 #include <string>
@@ -16,6 +17,7 @@ bool loadMedia();
 void close();
 void printDebugInfo();
 SDL_Texture* loadTexture(std::string);
+SDL_Texture* loadFontTexture(std::string, SDL_Color);
 
 
 SDL_Window* window = NULL;
@@ -23,6 +25,9 @@ SDL_Texture* bgTexture = NULL;
 SDL_Texture* characterTexture = NULL;
 SDL_Texture* spriteTexture = NULL;
 SDL_Renderer* gRenderer = NULL;
+
+TTF_Font *gFont = NULL;
+SDL_Texture *gTextTexture = NULL;
 
 SDL_Rect renderRect;
 bool canJump;
@@ -43,6 +48,12 @@ double gravForce = 0.00003;
 
 
 double impactSpeed = 0;
+
+
+int textHeight = 0;
+int textWidth = 0;
+
+
 
 bool init()
 {
@@ -83,6 +94,13 @@ bool init()
 					printf("Error in initializing SDL_Image library. \nSDL Error: %s\n", SDL_GetError());
 					success = false;
 				}
+
+
+				if(TTF_Init() == -1)
+				{
+					printf("Could not initialize SDL_ttf. Error: %s\n", TTF_GetError());
+					success = false;
+				}
 			}
 		}
 	}
@@ -115,6 +133,23 @@ bool loadMedia()
 	if(spriteTexture == NULL)
 	{
 		printf("Failed to load map image.\nSDL Error: %s", SDL_GetError());
+		success = false;
+	}
+
+	gFont = TTF_OpenFont("fonts\\UbuntuMono-R.ttf", 24);
+	if(gFont == NULL)
+	{
+		printf("Failed to load ttf font.\n");
+		success = false;
+	}
+
+
+	SDL_Color textColor = { 0, 0, 0};
+
+	gTextTexture = loadFontTexture("Hello World !", textColor);
+	if(gTextTexture == NULL)
+	{
+		printf("Failed to load font texture.\n");
 		success = false;
 	}
 
@@ -152,6 +187,36 @@ SDL_Texture* loadTexture(std::string filepath)
 }
 
 
+SDL_Texture* loadFontTexture(std::string text, SDL_Color textColor)
+{
+	SDL_Texture* newTexture = NULL;
+
+	SDL_Surface* image = TTF_RenderText_Solid(gFont, text.c_str(), textColor);
+
+	if(image == NULL)
+	{
+		printf("Error in rendering the text to the surface. SDL_ttf Error: %s\n", TTF_GetError());
+	}
+	else
+	{
+		newTexture = SDL_CreateTextureFromSurface(gRenderer, image);
+
+		if(newTexture == NULL)
+		{
+			printf("Error in creating the font texture.\nSDL Error: %s\n", SDL_GetError());
+		}
+		else
+		{
+			textHeight = image->h;
+			textWidth = image->w;
+		}
+
+		SDL_FreeSurface(image);
+
+	}
+
+	return newTexture;
+}
 
 void close()
 {
@@ -169,6 +234,14 @@ void close()
 	window = NULL;
 	gRenderer = NULL;
 
+	SDL_DestroyTexture(gTextTexture);
+	gTextTexture = NULL;
+
+	TTF_CloseFont(gFont);
+
+
+	TTF_Quit();
+	IMG_Quit();
 	SDL_Quit();
 }
 
@@ -189,7 +262,7 @@ void drawShapes()
 }
 
 
-
+int jumpIndex = 0;
 
 void update()
 {
@@ -206,15 +279,16 @@ void update()
 	{
 		deltaY = -impactSpeed*0.4;
 
-		std::cout << "deltaY: " << deltaY << " " << "impactSpeed: " << impactSpeed  << renderRect.h;
-		std::cout << std::endl;
+//		std::cout << "deltaY: " << deltaY << " " << "impactSpeed: " << impactSpeed  << renderRect.h;
+//		std::cout << std::endl;
 	}
 
 	if(isJump)
 	{
-		if(integralY == 250)
+		if(integralY >= 230)
 		{
 			deltaY = -0.08;
+//			std::cout<<"Jumped "<< jumpIndex++ <<" times" << std::endl;
 		}
 
 		isJump = false;
@@ -258,6 +332,10 @@ void update()
 	}
 
 
+	if(integralY >= 230) canJump = true;
+	else canJump = false;
+
+
 	renderRect.y = integralY;
 	renderRect.x = integralX;
 
@@ -275,10 +353,9 @@ void render()
 	SDL_RenderClear(gRenderer);
 	SDL_RenderCopy(gRenderer, bgTexture, NULL, NULL);
 
+	SDL_Rect fontRenderRect = { 600, 550, textWidth, textHeight};
 
-
-
-
+	SDL_RenderCopy(gRenderer, gTextTexture, NULL, &fontRenderRect);
 
 	SDL_RenderCopyEx(gRenderer, characterTexture, NULL, &renderRect, 0, NULL, SDL_FLIP_NONE );
 
@@ -351,7 +428,7 @@ int main(int argc, char* argv[])
 						deltaY = 0;
 					}
 
-					if (currentKeyStates[ SDL_SCANCODE_SPACE])
+					if (currentKeyStates[ SDL_SCANCODE_SPACE] && canJump == true)
 					{
 						 isJump = true;
 					}
@@ -403,17 +480,12 @@ int main(int argc, char* argv[])
 //					}
 				}
 
-//				if(renderRect.y >= 250) canJump = true;
-//				else canJump = false;
 
 
 				update();
 
 				render();
 
-
-
-				//SDL_Delay(1);
 			}
 
 		}
