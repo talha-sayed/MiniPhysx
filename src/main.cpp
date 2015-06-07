@@ -3,6 +3,7 @@
 #include <SDL.h>
 #include <SDL_image.h>
 #include <SDL_ttf.h>
+#include <SDL_mixer.h>
 #include <iostream>
 #include <stdio.h>
 #include <string>
@@ -31,6 +32,10 @@ SDL_Renderer* gRenderer = NULL;
 
 TTF_Font *gFont = NULL;
 SDL_Texture *gTextTexture = NULL;
+
+
+Mix_Chunk *jumpSound = NULL;
+
 
 SDL_Rect renderRect;
 bool canJump;
@@ -69,7 +74,7 @@ bool init()
 {
 	bool success = true;
 
-	if(SDL_Init(SDL_INIT_VIDEO) < 0)
+	if(SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) < 0)
 	{
 		printf("Error in initializing SDL. SDL Error: %s\n", SDL_GetError());
 		success = false;
@@ -105,6 +110,11 @@ bool init()
 					success = false;
 				}
 
+				if(Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048) < 0)
+				{
+					printf("SDL_Mixer not initialized! SDL_Mixer Error: %s\n", Mix_GetError());
+					success = false;
+				}
 
 				if(TTF_Init() == -1)
 				{
@@ -160,6 +170,13 @@ bool loadMedia()
 		success = false;
 	}
 
+
+	jumpSound = Mix_LoadWAV("sounds\\Maro_Jump_Sound_Effect.wav");
+	if(jumpSound == NULL)
+	{
+		printf("Failed to load the jump sound");
+		success = false;
+	}
 
 	SDL_Color textColor = { 0, 0, 0};
 
@@ -257,6 +274,9 @@ void close()
 	TTF_CloseFont(gFont);
 
 
+	Mix_FreeChunk(jumpSound);
+
+	Mix_Quit();
 	TTF_Quit();
 	IMG_Quit();
 	SDL_Quit();
@@ -285,6 +305,7 @@ Uint32 currentUpdateCount = 0;
 
 
 bool isAirborne = false;
+bool isJumping = false;
 
 void update()
 {
@@ -336,10 +357,12 @@ void update()
 
 	if(isJump)
 	{
-		if(integralY >= JUMP_HEIGHT)
+		if(integralY >= JUMP_HEIGHT && !isJumping)
 		{
 			deltaY = -7;
-//			std::cout<<"Jumped "<< jumpIndex++ <<" times" << std::endl;
+			Mix_PlayChannel(-1, jumpSound, 0);
+			isJumping = true;
+			std::cout<<"Sound! "<< jumpIndex++ <<" times" << std::endl;
 		}
 
 		isJump = false;
@@ -482,6 +505,8 @@ int main(int argc, char* argv[])
 
 
 				if(deltaX*deltaX < 0.0001) deltaX = 0;
+
+				if(deltaY > 0) isJumping = false;
 				//*********************
 
 				const Uint8* currentKeyStates = SDL_GetKeyboardState( NULL );
